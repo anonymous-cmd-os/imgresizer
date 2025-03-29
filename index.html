@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Cyberpunk Image Resizer</title>
+    <style>
+        :root {
+            --neon-primary: #00fff2;
+            --neon-secondary: #ff00e5;
+            --neon-tertiary: #8a2be2;
+            --bg-dark: #0a0a0a;
+            --bg-light: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.2);
+            border: 1px solid var(--neon-primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--neon-primary);
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-primary);
+            animation: glitch 5s infinite;
+        }
+
+        .upload-section {
+            border: 2px dashed var(--neon-primary);
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 242, 0.05);
+        }
+
+        .upload-section.drag-over {
+            background: rgba(0, 255, 242, 0.1);
+            border-color: var(--neon-secondary);
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.3);
+        }
+
+        .upload-section p {
+            margin: 10px 0;
+            color: #fff;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .cyber-button {
+            background: transparent;
+            color: var(--neon-primary);
+            padding: 10px 20px;
+            border: 1px solid var(--neon-primary);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-button:hover {
+            background: var(--neon-primary);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--neon-primary);
+        }
+
+        .cyber-button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(0, 255, 242, 0.2),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .control-group {
+            background: rgba(0, 255, 242, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--neon-primary);
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            box-shadow: 0 0 15px var(--neon-primary);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--neon-primary);
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+
+        input[type="number"],
+        input[type="range"],
+        select {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-dark);
+            border: 1px solid var(--neon-primary);
+            border-radius: 4px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 4px;
+            background: var(--neon-primary);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--neon-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-primary);
+        }
+
+        .preview-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .original-image,
+        .resized-image {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 255, 242, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--neon-primary);
+        }
+
+        .image-container {
+            max-width: 100%;
+            overflow: hidden;
+            border: 1px solid var(--neon-primary);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--neon-primary);
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading::after {
+            content: "";
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--bg-dark);
+            border-top: 5px solid var(--neon-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shine {
+            0% { left: -50%; }
+            100% { left: 150%; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-section {
+                flex-direction: column;
+            }
+
+            .original-image,
+            .resized-image {
+                min-width: 100%;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+
+        .size-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: var(--neon-primary);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .quality-enhancement-options {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 242, 0.05);
+            border-radius: 8px;
+            border: 1px solid var(--neon-primary);
+        }
+
+        .enhancement-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .enhancement-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cyberpunk Image Resizer Pro</h1>
+        
+        <div class="upload-section" id="dropZone">
+            <p>Drag & Drop your image here or</p>
+            <input type="file" id="fileInput" accept="image/*">
+            <button class="cyber-button" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <p class="supported-formats">Supported formats: JPG, PNG, GIF, WebP</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="widthInput">Width (px)</label>
+                <input type="number" id="widthInput" min="1" value="800">
+                <input type="range" id="widthRange" min="1" max="2000" value="800">
+            </div>
+
+            <div class="control-group">
+                <label for="heightInput">Height (px)</label>
+                <input type="number" id="heightInput" min="1" value="600">
+                <input type="range" id="heightRange" min="1" max="2000" value="600">
+            </div>
+
+            <div class="control-group">
+                <label for="targetSize">Target File Size (KB)</label>
+                <input type="number" id="targetSize" min="1" value="500">
+            </div>
+
+            <div class="control-group">
+                <label for="format">Output Format</label>
+                <select id="format">
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="quality-enhancement-options">
+            <h3>Quality Enhancement Options</h3>
+            <div class="enhancement-toggle">
+                <input type="checkbox" id="sharpening" checked>
+                <label for="sharpening">Image Sharpening</label>
+            </div>
+            <div class="enhancement-toggle">
+                <input type="checkbox" id="noiseReduction" checked>
+                <label for="noiseReduction">Noise Reduction</label>
+            </div>
+            <div class="enhancement-toggle">
+                <input type="checkbox" id="colorEnhancement" checked>
+                <label for="colorEnhancement">Color Enhancement</label>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <div class="original-image">
+                <h3>Original Image</h3>
+                <div class="image-container">
+                    <img id="originalImage" alt="Original image preview">
+                    <div class="size-indicator" id="originalSize"></div>
+                </div>
+                <div class="image-info" id="originalInfo"></div>
+            </div>
+
+            <div class="resized-image">
+                <h3>Enhanced Image</h3>
+                <div class="image-container">
+                    <img id="resizedImage" alt="Resized image preview">
+                    <div class="size-indicator" id="resizedSize"></div>
+                </div>
+                <div class="image-info" id="resizedInfo"></div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="cyber-button" id="downloadBtn" disabled>Download Enhanced Image</button>
+            <button class="cyber-button" id="resetBtn" disabled>Reset</button>
+        </div>
+    </div>
+
+    <div class="loading" id="loading"></div>
+
+    <script>
+        let originalImage = null;
+        let resizedImage = null;
+        let currentFileSize = 0;
+
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const widthRange = document.getElementById('widthRange');
+        const heightRange = document.getElementById('heightRange');
+        const targetSizeInput = document.getElementById('targetSize');
+        const formatSelect = document.getElementById('format');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loading = document.getElementById('loading');
+
+        // Enhancement options
+        const sharpeningToggle = document.getElementById('sharpening');
+        const noiseReductionToggle = document.getElementById('noiseReduction');
+        const colorEnhancementToggle = document.getElementById('colorEnhancement');
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                loadImage(file);
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        }
+
+        async function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    document.getElementById('originalImage').src = e.target.result;
+                    currentFileSize = Math.round(file.size / 1024); // Convert to KB
+                    document.getElementById('originalSize').textContent = `${currentFileSize} KB`;
+                    updateOriginalInfo();
+                    widthInput.value = widthRange.value = img.width;
+                    heightInput.value = heightRange.value = img.height;
+                    targetSizeInput.value = Math.round(currentFileSize / 2); // Set default target size to half of original
+                    processImage();
+                    enableControls();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function processImage() {
+            if (!originalImage) return;
+
+            loading.style.display = 'flex';
+            
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = parseInt(widthInput.value);
+                canvas.height = parseInt(heightInput.value);
+                
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                
+                // Apply image enhancements
+                if (sharpeningToggle.checked) {
+                    await applySharpening(ctx);
+                }
+                
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                
+                if (noiseReductionToggle.checked) {
+                    await applyNoiseReduction(ctx);
+                }
+                
+                if (colorEnhancementToggle.checked) {
+                    await applyColorEnhancement(ctx);
+                }
+
+                // Binary search for optimal quality to match target file size
+                let minQuality = 0;
+                let maxQuality = 1;
+                let currentQuality = 0.7;
+                const targetSize = parseInt(targetSizeInput.value);
+                const format = formatSelect.value;
+                let bestQuality = currentQuality;
+                let bestSizeDiff = Infinity;
+                
+                for (let i = 0; i < 10; i++) { // Maximum 10 iterations
+                    const dataUrl = canvas.toDataURL(`image/${format}`, currentQuality);
+                    const size = Math.round((dataUrl.length * 3) / 4 / 1024); // Approximate KB size
+                    
+                    const sizeDiff = Math.abs(size - targetSize);
+                    if (sizeDiff < bestSizeDiff) {
+                        bestQuality = currentQuality;
+                        bestSizeDiff = sizeDiff;
+                    }
+                    
+                    if (Math.abs(size - targetSize) < targetSize * 0.05) { // Within 5% of target
+                        break;
+                    }
+                    
+                    if (size > targetSize) {
+                        maxQuality = currentQuality;
+                    } else {
+                        minQuality = currentQuality;
+                    }
+                    currentQuality = (minQuality + maxQuality) / 2;
+                }
+                
+                const finalDataUrl = canvas.toDataURL(`image/${format}`, bestQuality);
+                document.getElementById('resizedImage').src = finalDataUrl;
+                const finalSize = Math.round((finalDataUrl.length * 3) / 4 / 1024);
+                document.getElementById('resizedSize').textContent = `${finalSize} KB`;
+                
+                updateResizedInfo();
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function applySharpening(ctx) {
+            const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const pixels = imageData.data;
+            const sharpenMatrix = [
+                0, -1, 0,
+                -1, 5, -1,
+                0, -1, 0
+            ];
+            
+            const result = await applyConvolutionMatrix(pixels, ctx.canvas.width, ctx.canvas.height, sharpenMatrix);
+            imageData.data.set(result);
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        async function applyNoiseReduction(ctx) {
+            const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const pixels = imageData.data;
+            const blurMatrix = [
+                1/9, 1/9, 1/9,
+                1/9, 1/9, 1/9,
+                1/9, 1/9, 1/9
+            ];
+            
+            const result = await applyConvolutionMatrix(pixels, ctx.canvas.width, ctx.canvas.height, blurMatrix);
+            imageData.data.set(result);
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        async function applyColorEnhancement(ctx) {
+            const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const pixels = imageData.data;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                pixels[i] = pixels[i] * 1.2; // Enhance red
+                pixels[i + 1] = pixels[i + 1] * 1.1; // Enhance green
+                pixels[i + 2] = pixels[i + 2] * 1.1; // Enhance blue
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        async function applyConvolutionMatrix(pixels, width, height, matrix) {
+            const result = new Uint8ClampedArray(pixels.length);
+            
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = (y * width + x) * 4;
+                    
+                    for (let c = 0; c < 3; c++) {
+                        let val = 0;
+                        for (let ky = -1; ky <= 1; ky++) {
+                            for (let kx = -1; kx <= 1; kx++) {
+                                const pidx = ((y + ky) * width + (x + kx)) * 4;
+                                val += pixels[pidx + c] * matrix[(ky + 1) * 3 + (kx + 1)];
+                            }
+                        }
+                        result[idx + c] = val;
+                    }
+                    result[idx + 3] = pixels[idx + 3]; // Keep original alpha
+                }
+            }
+            
+            return result;
+        }
+
+        function updateOriginalInfo() {
+            const info = document.getElementById('originalInfo');
+            info.textContent = `Original Size: ${originalImage.width}x${originalImage.height}px`;
+        }
+
+        function updateResizedInfo() {
+            const info = document.getElementById('resizedInfo');
+            info.textContent = `Resized: ${widthInput.value}x${heightInput.value}px`;
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `enhanced-image.${formatSelect.value}`;
+            link.href = document.getElementById('resizedImage').src;
+            link.click();
+        }
+
+        function resetAll() {
+            fileInput.value = '';
+            document.getElementById('originalImage').src = '';
+            document.getElementById('resizedImage').src = '';
+            document.getElementById('originalInfo').textContent = '';
+            document.getElementById('resizedInfo').textContent = '';
+            document.getElementById('originalSize').textContent = '';
+            document.getElementById('resizedSize').textContent = '';
+            originalImage = null;
+            currentFileSize = 0;
+            widthInput.value = widthRange.value = 800;
+            heightInput.value = heightRange.value = 600;
+            targetSizeInput.value = 500;
+            formatSelect.value = 'jpeg';
+            sharpeningToggle.checked = true;
+            noiseReductionToggle.checked = true;
+            colorEnhancementToggle.checked = true;
+            disableControls();
+        }
+
+        function enableControls() {
+            downloadBtn.disabled = false;
+            resetBtn.disabled = false;
+        }
+
+        function disableControls() {
+            downloadBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+
+        // Event listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        widthInput.addEventListener('input', () => {
+            widthRange.value = widthInput.value;
+            processImage();
+        });
+        widthRange.addEventListener('input', () => {
+            widthInput.value = widthRange.value;
+            processImage();
+        });
+        heightInput.addEventListener('input', () => {
+            heightRange.value = heightInput.value;
+            processImage();
+        });
+        heightRange.addEventListener('input', () => {
+            heightInput.value = heightRange.value;
+            processImage();
+        });
+        targetSizeInput.addEventListener('input', processImage);
+        formatSelect.addEventListener('change', processImage);
+        downloadBtn.addEventListener('click', downloadImage);
+        resetBtn.addEventListener('click', resetAll);
+        
+        // Enhancement toggles
+        sharpeningToggle.addEventListener('change', processImage);
+        noiseReductionToggle.addEventListener('change', processImage);
+        colorEnhancementToggle.addEventListener('change', processImage);
+
+        // Initialize
+        disableControls();
+        
+        // Mobile optimization
+        function initializeMobileFeatures() {
+            const controls = document.querySelectorAll('input[type="range"]');
+            controls.forEach(control => {
+                control.addEventListener('touchstart', () => {
+                    control.style.boxShadow = `0 0 15px var(--neon-primary)`;
+                });
+                control.addEventListener('touchend', () => {
+                    control.style.boxShadow = 'none';
+                });
+            });
+        }
+
+        // Initialize mobile features
+        initializeMobileFeatures();
+    </script>
+</body>
+</html>
